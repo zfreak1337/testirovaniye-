@@ -1,0 +1,38 @@
+---
+- hosts: all
+  become: yes
+  vars:
+    server_name: "{{ ansible_default_ipv4.address }}"
+    document_root: /testirovaniye
+    app_root: site
+      
+  tasks:
+    - name: update apt cache and install nginx
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+
+    - name : copy website files to the servers document root
+      copy:
+        src : "{{ app_root }}"
+        dest: "{{ document_root }}"
+        mode: perserve
+
+    - name: apply ngix template
+      template:
+        src: testirovaniye/ansible.nginx.conf.j2
+        dest: /etc/nginx/sites-available/default
+      notify: Restart Nginx
+
+    - name: allow all access to tcp port 80
+      ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+ 
+  handlers:
+    - name : Restart Nginx
+      service:
+        name: nginx
+        state: restated
